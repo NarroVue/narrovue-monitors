@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NarroVue · Weekly Brief Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Literata:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink: #0e0d0b;
+  --paper: #f5f2ea;
+  --accent: #1a4a2e;
+  --accent2: #c94c2e;
+  --muted: #7a7468;
+  --border: #d4cfc3;
+  --surface: #fffef9;
+  --tag: #e6e1d5;
+  --mono: 'IBM Plex Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --body: 'Literata', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--body);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  position: relative;
+}
+
+/* grain overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+
+header {
+  border-bottom: 2px solid var(--ink);
+  padding: 1.4rem 2.5rem 1.2rem;
+  display: flex; align-items: center; gap: 1.5rem;
+  position: relative; z-index: 1;
+  background: var(--paper);
+}
+
+.logo-mark {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.logo-mark span { color: var(--accent); }
+
+.header-sub {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-left: 1px solid var(--border);
+  padding-left: 1.2rem;
+}
+
+.instrument-label {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.6;
+}
+
+.instrument-label strong {
+  display: block;
+  color: var(--accent);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Main layout */
+.shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 2.5rem 5rem;
+  position: relative; z-index: 1;
+}
+
+/* Step cards */
+.step-row {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 0 1.2rem;
+  margin-bottom: 2rem;
+  align-items: start;
+}
+
+.step-num {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--border);
+  line-height: 1;
+  padding-top: 0.15rem;
+}
+
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.4rem 1.6rem;
+}
+
+.step-card h3 {
+  font-family: var(--display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.9rem;
+}
+
+/* Data paste zone */
+.paste-area {
+  width: 100%;
+  min-height: 110px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.9rem 1rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.paste-area:focus { border-color: var(--accent); border-style: solid; }
+.paste-area::placeholder { color: var(--muted); font-style: italic; }
+
+/* Form fields */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.field-row.single { grid-template-columns: 1fr; }
+
+label {
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.5rem 0.7rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+/* Generate button */
+.gen-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  padding: 0.75rem 1.8rem;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  margin-top: 0.4rem;
+}
+.gen-btn:hover { background: #153d25; }
+.gen-btn:active { transform: scale(0.98); }
+.gen-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+.gen-btn .spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+.gen-btn.loading .spinner { display: block; }
+.gen-btn.loading .btn-text { opacity: 0.7; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Output zone */
+#output-zone { display: none; margin-top: 2.5rem; }
+#output-zone.visible { display: block; }
+
+.output-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.4rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.output-header h2 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.week-badge {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.2em 0.7em;
+  border-radius: 2px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-bottom: 1.4rem;
+}
+
+@media (max-width: 720px) {
+  .platform-grid { grid-template-columns: 1fr; }
+  .field-row { grid-template-columns: 1fr; }
+}
+
+.platform-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.platform-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--tag);
+}
+
+.platform-name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.platform-name.reddit { color: #ff4500; }
+.platform-name.bluesky { color: #0085ff; }
+
+.char-counter {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+.char-counter.warn { color: var(--accent2); }
+
+.post-content {
+  padding: 1rem;
+  font-family: var(--body);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  min-height: 120px;
+  outline: none;
+  color: var(--ink);
+}
+
+.post-content[contenteditable]:focus {
+  background: #fffef5;
+}
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 1rem 0.9rem auto;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: fit-content;
+}
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.copy-btn.copied { border-color: var(--accent); color: var(--accent); }
+
+/* Digest card */
+.digest-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 1.2rem;
+}
+
+.digest-card h4 {
+  font-family: var(--display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.digest-card p {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.hashtag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+}
+
+.hashtag {
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  background: var(--tag);
+  color: var(--accent);
+  padding: 0.2em 0.55em;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.hashtag:hover { background: var(--accent); color: #fff; }
+
+/* Error state */
+.error-msg {
+  background: #fdf0ed;
+  border: 1px solid #f0c4b8;
+  border-radius: 3px;
+  padding: 0.9rem 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--accent2);
+  margin-top: 1rem;
+}
+
+/* Instructions callout */
+.callout {
+  background: #e8eee9;
+  border-left: 3px solid var(--accent);
+  padding: 0.8rem 1rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  border-radius: 0 3px 3px 0;
+}
+.callout code {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  background: rgba(0,0,0,0.07);
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+}
+
+footer {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  padding: 2rem;
+  border-top: 1px solid var(--border);
+  position: relative; z-index: 1;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <a class="logo-mark" href="#">Narro<span>Vue</span></a>
+  </div>
+  <div class="header-sub">Narrative Intelligence Audit</div>
+  <div class="instrument-label">
+    <strong>Weekly Brief Generator</strong>
+    Public Health Compacts Monitor
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- STEP 1 -->
+  <div class="step-row">
+    <div class="step-num">01</div>
+    <div class="step-card">
+      <h3>Paste notebook output</h3>
+      <div class="callout">
+        Run your <code>public_health_compacts_monitor_2026.ipynb</code> and paste the final cell's printed summary here — or paste any mix of meeting, research, and policy entries you want highlighted this week.
+      </div>
+      <textarea class="paste-area" id="raw-data" placeholder="e.g.:
+Meetings tracker: 5 entries
+Research tracker: 4 entries
+Policy tracker: 5 entries
+
+Notable this week:
+- GPHA Emergency Preparedness Work Group finalized shared stockpile protocol
+- NEPHC tabletop exercise surfaced lab data-sharing gaps
+- ASTHO testified to Senate HELP Committee on CDC Prevention Fund
+- WCHA tri-state executive order on extreme-heat protocols signed
+...or paste any freeform notes from your monitoring run."></textarea>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-row">
+    <div class="step-num">02</div>
+    <div class="step-card">
+      <h3>Brief parameters</h3>
+      <div class="field-row">
+        <div>
+          <label>Week of (date)</label>
+          <input type="text" id="week-date" placeholder="e.g. May 18, 2026"/>
+        </div>
+        <div>
+          <label>Issue number</label>
+          <input type="number" id="issue-num" placeholder="e.g. 3" min="1"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label>Lead story / angle this week</label>
+          <input type="text" id="lead-angle" placeholder="e.g. GPHA stockpile deal, Senate testimony, NEPHC lab gaps…"/>
+        </div>
+        <div>
+          <label>Tone</label>
+          <select id="tone">
+            <option value="analytical">Analytical / cold</option>
+            <option value="urgent">Urgent / stakes-forward</option>
+            <option value="skeptical">Skeptical / audit-minded</option>
+            <option value="accessible" selected>Accessible / public interest</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row single">
+        <div>
+          <label>Website URL to drive traffic to</label>
+          <input type="text" id="site-url" value="https://narrovue.com" placeholder="https://narrovue.com"/>
+        </div>
+      </div>
+      <button class="gen-btn" id="gen-btn" onclick="generateBrief()">
+        <div class="spinner"></div>
+        <span class="btn-text">Generate Weekly Brief</span>
+      </button>
+      <div class="error-msg" id="error-msg" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="output-zone">
+    <div class="output-header">
+      <h2>Weekly Brief</h2>
+      <span class="week-badge" id="out-week-label">Week of —</span>
+    </div>
+
+    <!-- Digest summary -->
+    <div class="digest-card">
+      <h4>Editorial digest</h4>
+      <p id="digest-text"></p>
+    </div>
+
+    <!-- Hashtag bank -->
+    <div class="digest-card" style="border-left-color: var(--accent2);">
+      <h4>Hashtag bank — click to copy</h4>
+      <div class="hashtag-row" id="hashtag-row"></div>
+    </div>
+
+    <!-- Platform posts -->
+    <div class="platform-grid">
+
+      <!-- Reddit -->
+      <div class="platform-card">
+        <div class="platform-bar">
+          <span class="platform-name reddit">Reddit</span>
+          <span class="char-counter" id="reddit-counter">— chars</span>
+        </div>
+        <div class="post-content" id="reddit-post" contenteditable="true" spellcheck="true"></div>
+        <button class="copy-btn" onclick="copyPost('reddit-post', this)">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" stroke="currentColor" stroke-width="1.5"/></svg>
+          Copy
+        </button>
+      </div>
+
+      <!-- BlueSky -->
+      <div class="platform-card">
+        <div class="platform-bar">
+          <span class="platform-name bluesky">Bluesky</span>
+          <span class="char-counter" id="bsky-counter">— chars</span>
+        </div>
+        <div class="post-content" id="bsky-post" contenteditable="true" spellcheck="true"></div>
+        <button class="copy-btn" onclick="copyPost('bsky-post', this)">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" stroke="currentColor" stroke-width="1.5"/></svg>
+          Copy
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Reddit title line -->
+    <div class="platform-card" style="margin-bottom:1.2rem">
+      <div class="platform-bar">
+        <span class="platform-name reddit">Reddit — Post title</span>
+        <span class="char-counter" id="reddit-title-counter">— chars</span>
+      </div>
+      <div class="post-content" id="reddit-title" contenteditable="true" spellcheck="true" style="min-height:50px;font-weight:600;font-size:0.9rem;"></div>
+      <button class="copy-btn" onclick="copyPost('reddit-title', this)">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" stroke="currentColor" stroke-width="1.5"/></svg>
+        Copy
+      </button>
+    </div>
+
+  </div><!-- /output-zone -->
+
+</div><!-- /shell -->
+
+<footer>NarroVue · Narrative Intelligence Audit · Weekly Brief Generator · contact@narrovue.com</footer>
+
+<script>
+const TONES = {
+  analytical: "cold, precise, data-forward — no sentiment, let the facts do the work",
+  urgent: "high-stakes framing, emphasize what's at risk if nothing changes",
+  skeptical: "audit-minded, slightly adversarial — ask what these compacts are actually accomplishing",
+  accessible: "clear public-interest language, assume a smart but non-specialist reader"
+};
+
+async function generateBrief() {
+  const rawData   = document.getElementById('raw-data').value.trim();
+  const weekDate  = document.getElementById('week-date').value.trim() || new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+  const issueNum  = document.getElementById('issue-num').value.trim() || '—';
+  const lead      = document.getElementById('lead-angle').value.trim();
+  const tone      = document.getElementById('tone').value;
+  const siteUrl   = document.getElementById('site-url').value.trim() || 'https://narrovue.com';
+
+  if (!rawData) {
+    showError('Paste your notebook output in Step 1 before generating.');
+    return;
+  }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.btn-text').textContent = 'Generating…';
+  hideError();
+
+  const systemPrompt = `You are the editorial voice of NarroVue — a policy intelligence project that audits complex systems at the intersection of AI, law, and public accountability. NarroVue publishes a weekly brief on the Public Health Compacts Monitor: an instrument tracking U.S. interstate public health alliances (GPHA, WCHA, NEPHC, ASTHO).
+
+Your job: generate compact, platform-native social copy that drives readers to narrovue.com. The voice is ${TONES[tone]}.
+
+NarroVue brand rules:
+- Never hype. Never preach. Signal intelligence, not urgency theater.
+- Short sentences. Active voice. Specific nouns, not vague gestures.
+- Always position NarroVue as the place to read more deeply — not a news aggregator, but an analytical instrument.
+- Hashtags are deliberate, not decorative.
+- The URL goes at the end, as a destination — not a call-to-action cliché.
+
+Return ONLY valid JSON, no markdown fences, no preamble:
+{
+  "digest": "2-3 sentence editorial summary for internal use (not published — what actually happened this week and why it matters analytically)",
+  "reddit_title": "Reddit post title — punchy, 80-120 chars, no clickbait, factual hook",
+  "reddit_body": "Reddit post body — 200-350 words. Lead with the data signal, explain the analytical angle, reference NarroVue as the monitoring instrument, end with the URL. Paragraphs, no bullet spam. Subreddit-friendly: r/politics, r/health, r/publicpolicy.",
+  "bluesky": "Bluesky post — strict 300 char max including URL and hashtags. One crisp observation + URL + 2-3 hashtags. No padding.",
+  "hashtags": ["array", "of", "6-10", "hashtags", "no", "hash", "symbol"]
+}`;
+
+  const userMsg = `Week of: ${weekDate}
+Issue: #${issueNum}
+Lead angle: ${lead || '(derive from data)'}
+Site URL: ${siteUrl}
+
+Notebook data / notes from this run:
+${rawData}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.content) {
+      throw new Error(data.error?.message || 'API error');
+    }
+
+    const raw = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    let parsed;
+    try {
+      parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    } catch(e) {
+      throw new Error('Could not parse response. Raw: ' + raw.slice(0, 200));
+    }
+
+    renderOutput(parsed, weekDate, issueNum);
+
+  } catch(err) {
+    showError('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('.btn-text').textContent = 'Generate Weekly Brief';
+  }
+}
+
+function renderOutput(d, weekDate, issueNum) {
+  document.getElementById('out-week-label').textContent = `Issue #${issueNum} · ${weekDate}`;
+  document.getElementById('digest-text').textContent = d.digest || '';
+
+  // Hashtags
+  const hRow = document.getElementById('hashtag-row');
+  hRow.innerHTML = '';
+  (d.hashtags || []).forEach(tag => {
+    const el = document.createElement('span');
+    el.className = 'hashtag';
+    el.textContent = '#' + tag;
+    el.title = 'Click to copy';
+    el.onclick = () => {
+      navigator.clipboard.writeText('#' + tag);
+      el.style.background = 'var(--accent)';
+      el.style.color = '#fff';
+      setTimeout(() => { el.style.background = ''; el.style.color = ''; }, 1200);
+    };
+    hRow.appendChild(el);
+  });
+
+  // Reddit title
+  const rtEl = document.getElementById('reddit-title');
+  rtEl.textContent = d.reddit_title || '';
+  updateCounter('reddit-title', 'reddit-title-counter', 300);
+
+  // Reddit body
+  const rbEl = document.getElementById('reddit-post');
+  rbEl.textContent = d.reddit_body || '';
+  updateCounter('reddit-post', 'reddit-counter', 40000);
+
+  // Bluesky
+  const bsEl = document.getElementById('bsky-post');
+  bsEl.textContent = d.bluesky || '';
+  updateCounter('bsky-post', 'bsky-counter', 300);
+
+  // Live counters on edit
+  rtEl.addEventListener('input', () => updateCounter('reddit-title', 'reddit-title-counter', 300));
+  rbEl.addEventListener('input', () => updateCounter('reddit-post', 'reddit-counter', 40000));
+  bsEl.addEventListener('input', () => updateCounter('bsky-post', 'bsky-counter', 300));
+
+  const oz = document.getElementById('output-zone');
+  oz.classList.add('visible');
+  oz.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateCounter(contentId, counterId, limit) {
+  const text = document.getElementById(contentId).textContent;
+  const len = text.length;
+  const el = document.getElementById(counterId);
+  el.textContent = len + ' / ' + limit;
+  el.classList.toggle('warn', len > limit * 0.9);
+}
+
+function copyPost(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.querySelector('span') ? null : null;
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copied`;
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('error-msg').style.display = 'none';
+}
+
+// Pre-fill date
+document.getElementById('week-date').value = new Date().toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+</script>
+</body>
+</html>
